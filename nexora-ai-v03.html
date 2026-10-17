@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NEXORA AI | Demo</title><style>
+:root{font-family:system-ui,-apple-system,sans-serif;color:#e8edf6;background:#0b1220}*{box-sizing:border-box}body{margin:0}header{padding:20px;background:#111d31;border-bottom:1px solid #2d3b51}h1{margin:0;font-size:25px}small,.muted{color:#9eacc0}main{max-width:800px;margin:auto;padding:18px}.tabs{display:flex;gap:10px;margin-bottom:16px}button{cursor:pointer;border:0;border-radius:10px;padding:12px 16px;font-weight:700;background:#39b88a;color:#071b17}.tabs button{flex:1;background:#26354c;color:#fff}.tabs button.active{background:#39b88a;color:#071b17}.panel{background:#142136;border:1px solid #2b3b53;border-radius:16px;padding:16px}.messages{height:360px;overflow:auto;display:flex;flex-direction:column;gap:12px;margin-bottom:14px}.bubble{max-width:90%;padding:12px;border-radius:14px;background:#263750;white-space:pre-wrap}.mine{align-self:flex-end;background:#185c4f}.send{display:flex;gap:8px}input{min-width:0;flex:1;border-radius:10px;border:1px solid #40536e;background:#0c1627;color:#fff;padding:12px;font-size:16px}.lead{background:#1d2e45;border-radius:12px;padding:14px;margin:12px 0} .lead p{margin:6px 0}.tag{color:#76e3b8;font-weight:bold} .hidden{display:none}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px} .secondary{background:#34465f;color:#fff}footer{padding:20px;text-align:center;font-size:12px;color:#8d9bb0}
+</style></head><body><header><h1>✦ NEXORA AI</h1><small>Asistente comercial · Demostración 0.3 con Gemini</small></header><main><div class="tabs"><button id="chatTab" class="active" onclick="tab('chat')">💬 Chat</button><button id="leadsTab" onclick="tab('leads')">📋 Clientes <span id="count">0</span></button></div><section id="chat" class="panel"><div class="messages" id="messages" aria-live="polite"></div><form id="form" class="send"><input id="reply" placeholder="Escribe tu respuesta..." autocomplete="off" required aria-label="Tu respuesta"><button>Enviar</button></form><div class="actions"><button class="secondary" onclick="restart()">Nueva conversación</button><button class="secondary" onclick="makeLead()">Guardar ficha de prueba</button></div></section><section id="leads" class="panel hidden"><h2>Fichas de clientes</h2><p class="muted">Fichas guardadas únicamente en este navegador. Los mensajes del chat se envían al servidor de NEXORA AI y al proveedor de IA. Usa datos ficticios.</p><div id="leadList"></div><button class="secondary" onclick="clearLeads()">Borrar fichas de prueba</button></section></main><footer>Demo con Gemini · No conectada a WhatsApp · No introduzcas datos personales reales. No usar con clientes reales hasta incorporar controles de acceso y límites de uso.</footer><script>
+const API = 'https://nexora-ai-api.seblozzgar.workers.dev/chat';
+const KEY = 'nexora_demo_leads_v03';
+const $ = id => document.getElementById(id);
+let messages = [], busy = false, saved = false;
+const welcome = '¡Hola! 👋 Soy NEXORA AI. Te ayudo con dudas sobre la revisión de un coche de segunda mano antes de comprarlo. ¿Qué coche estás mirando y en qué puedo ayudarte?';
+function bubble(text, mine=false) {
+  const el=document.createElement('div'); el.className='bubble'+(mine?' mine':'');
+  el.textContent=text; $('messages').append(el); $('messages').scrollTop=$('messages').scrollHeight;
+}
+function getLeads(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return []}}
+function saveLeads(v){try{localStorage.setItem(KEY,JSON.stringify(v))}catch{alert('No se pudieron guardar las fichas.')}}
+function tab(name){
+  $('chat').classList.toggle('hidden',name!=='chat');
+  $('leads').classList.toggle('hidden',name!=='leads');
+  $('chatTab').classList.toggle('active',name==='chat');
+  $('leadsTab').classList.toggle('active',name==='leads');
+  if(name==='leads')renderLeads();
+}
+function restart(){
+  messages=[];busy=false;saved=false;$('messages').replaceChildren();
+  $('reply').disabled=false;$('form').querySelector('button').disabled=false;
+  $('reply').value='';bubble(welcome);tab('chat');
+}
+function priority(text){
+  if(/hoy|mañana|urgente|esta semana|ya tengo cita|reservado/i.test(text))return 'Prioritario (orientativo)';
+  if(/solo miro|curiosidad|sin fecha|información|informacion/i.test(text))return 'Explorando (orientativo)';
+  return 'Por valorar';
+}
+function makeLead(){
+  if(!messages.length){alert('Escribe primero al asistente.');return;}
+  if(saved){alert('Esta conversación ya tiene una ficha guardada.');return;}
+  const userText=messages.filter(m=>m.role==='user').map(m=>m.text).join(' | ');
+  const transcript=messages.map(m=>(m.role==='user'?'Cliente: ':'NEXORA AI: ')+m.text).join('\n');
+  const lead={created:new Date().toLocaleString('es-ES'),status:priority(userText),
+    summary:userText.slice(0,500),transcript:transcript.slice(0,7000)};
+  const leads=getLeads();leads.unshift(lead);saveLeads(leads);saved=true;renderLeads();
+  bubble('Ficha de prueba guardada en este navegador. Puedes verla en la pestaña Clientes. La prioridad es orientativa; no hay reserva confirmada.');
+}
+function renderLeads(){
+  const leads=getLeads();$('count').textContent=leads.length;
+  const box=$('leadList');box.replaceChildren();
+  if(!leads.length){const p=document.createElement('p');p.textContent='Todavía no hay fichas de prueba.';box.append(p)}
+  leads.forEach((l,i)=>{
+    const card=document.createElement('div');card.className='lead';
+    const title=document.createElement('strong');title.textContent='Cliente de prueba '+(leads.length-i);card.append(title);
+    for(const [k,v] of [['Fecha',l.created],['Prioridad',l.status],['Resumen del cliente',l.summary]]){
+      const p=document.createElement('p');p.textContent=k+': '+v;card.append(p);
+    }
+    const btn=document.createElement('button');btn.textContent='Copiar conversación';
+    btn.onclick=async()=>{try{await navigator.clipboard.writeText('NEXORA AI - FICHA DE PRUEBA\n'+l.created+'\n'+l.status+'\n\n'+l.transcript);btn.textContent='Copiada ✓'}catch{alert('No se pudo copiar automáticamente.')}};
+    card.append(btn);box.append(card);
+  });
+}
+function clearLeads(){if(confirm('¿Borrar todas las fichas de prueba de este navegador?')){saveLeads([]);renderLeads()}}
+$('form').addEventListener('submit',async e=>{
+  e.preventDefault();if(busy)return;
+  const value=$('reply').value.trim();if(!value)return;
+  if(value.length>1500){alert('Escribe un mensaje de menos de 1500 caracteres.');return;}
+  const proposed=[...messages,{role:'user',text:value}];
+  // El servidor admite hasta 20 mensajes. Se conserva el último contexto.
+  const context=proposed.slice(-20);
+  busy=true;$('reply').disabled=true;$('form').querySelector('button').disabled=true;
+  $('reply').value='';bubble(value,true);bubble('Pensando…');
+  const pending=$('messages').lastElementChild;
+  try{
+    const response=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:context})});
+    const data=await response.json();
+    if(!response.ok||typeof data.reply!=='string')throw new Error(data.error||'No se pudo obtener respuesta');
+    pending.remove();bubble(data.reply);
+    messages=[...proposed,{role:'model',text:data.reply}].slice(-19);
+    saved=false;
+  }catch(err){pending.remove();bubble('No he podido conectar con la IA: '+err.message+'. Prueba de nuevo.');
+    // No se guarda el mensaje fallido para permitir reintentar.
+  }finally{busy=false;$('reply').disabled=false;$('form').querySelector('button').disabled=false;$('reply').focus()}
+});
+restart();renderLeads();
+</script></body></html>
