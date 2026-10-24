@@ -24,4 +24,25 @@ for query, args in [
         pass
     else:
         raise AssertionError("Se aceptó una relación entre negocios distintos")
-print("OK: 10 tablas y relaciones multiempresa verificadas.")
+# La asignación de conversaciones debe respetar la pertenencia al negocio.
+for suffix in ("a", "b"):
+    db.execute("INSERT INTO users(id,auth_subject) VALUES(?,?)", ("user-"+suffix, "auth-"+suffix))
+    db.execute("INSERT INTO business_memberships(business_id,user_id,role) VALUES(?,?,?)", ("biz-"+suffix, "user-"+suffix, "employee"))
+db.execute("UPDATE conversations SET assigned_user_id=? WHERE id=?", ("user-a", "conv-a"))
+try:
+    db.execute("UPDATE conversations SET assigned_user_id=? WHERE id=?", ("user-b", "conv-a"))
+except sqlite3.IntegrityError:
+    pass
+else:
+    raise AssertionError("Se permitió asignar un empleado de otro negocio")
+# Al salir un empleado, debe desasignarse antes de borrar su membresía.
+try:
+    db.execute("DELETE FROM business_memberships WHERE business_id=? AND user_id=?", ("biz-a", "user-a"))
+except sqlite3.IntegrityError:
+    pass
+else:
+    raise AssertionError("Se borró una membresía con conversaciones asignadas")
+db.execute("UPDATE conversations SET assigned_user_id=NULL WHERE id=?", ("conv-a",))
+db.execute("DELETE FROM business_memberships WHERE business_id=? AND user_id=?", ("biz-a", "user-a"))
+assert db.execute("SELECT assigned_user_id FROM conversations WHERE id='conv-a'").fetchone()[0] is None
+print("OK: 10 tablas, aislamiento entre negocios y asignaciones de empleados verificadas.")
