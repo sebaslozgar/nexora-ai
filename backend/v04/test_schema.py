@@ -107,4 +107,14 @@ assert [row[0] for row in list_visible_messages(db, actor_b, "conv-b")] == ["msg
 assert list_visible_messages(db, actor_b, "conv-a") == []
 assert [row[0] for row in list_visible_messages(db, owner_a, "conv-a")] == ["msg-a"]
 assert list_visible_messages(db, owner_a, "conv-b") == []
+# Transición a atención humana: solo conversación propia y estado permitido.
+from handoff import handoff_to_human
+assert not handoff_to_human(db, actor_b, "conv-a")
+assert handoff_to_human(db, actor_b, "conv-b")
+assert db.execute("SELECT status FROM conversations WHERE id='conv-b'").fetchone()[0] == "needs_human"
+assert not handoff_to_human(db, actor_b, "conv-b")
+assert handoff_to_human(db, owner_a, "conv-a")
+assert db.execute("SELECT status FROM conversations WHERE id='conv-a'").fetchone()[0] == "needs_human"
+db.execute("UPDATE conversations SET status='closed' WHERE id='conv-a'")
+assert not handoff_to_human(db, owner_a, "conv-a")
 print("OK: 10 tablas, aislamiento entre negocios, asignaciones y referencias verificadas.")
