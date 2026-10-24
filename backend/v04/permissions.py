@@ -75,3 +75,23 @@ def list_visible_conversations(db, actor: Actor):
            WHERE business_id=? ORDER BY updated_at DESC""",
         (actor.business_id,),
     ).fetchall()
+
+
+def list_visible_messages(db, actor: Actor, conversation_id: str):
+    """Read only messages belonging to an accessible conversation."""
+    if not conversation_id:
+        return []
+    if not allowed(actor, "conversations.read",
+                   resource_business_id=actor.business_id,
+                   assigned_user_id=actor.user_id):
+        return []
+    query = """SELECT m.id, m.sender_type, m.body
+               FROM messages AS m JOIN conversations AS c
+               ON m.business_id=c.business_id AND m.conversation_id=c.id
+               WHERE c.business_id=? AND c.id=?"""
+    params = [actor.business_id, conversation_id]
+    if actor.role == "employee":
+        query += " AND c.assigned_user_id=?"
+        params.append(actor.user_id)
+    query += " ORDER BY m.created_at, m.id"
+    return db.execute(query, params).fetchall()
