@@ -101,4 +101,10 @@ assert allowed(owner_a, "business.settings", resource_business_id="biz-a")
 assert not allowed(owner_a, "business.settings", resource_business_id="biz-b")
 assert not allowed(owner_a, "undefined.action", resource_business_id="biz-a")
 assert [r[0] for r in list_visible_conversations(db, owner_a)] == ["conv-a"]
+# Comprobar que los mensajes siguen la misma política de acceso.
+from permissions import list_visible_messages
+assert [row[0] for row in list_visible_messages(db, actor_b, "conv-b")] == ["msg-b"]
+assert list_visible_messages(db, actor_b, "conv-a") == []
+assert [row[0] for row in list_visible_messages(db, owner_a, "conv-a")] == ["msg-a"]
+assert list_visible_messages(db, owner_a, "conv-b") == []
 print("OK: 10 tablas, aislamiento entre negocios, asignaciones y referencias verificadas.")
