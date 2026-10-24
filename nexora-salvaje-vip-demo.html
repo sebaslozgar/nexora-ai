@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXORA AI · Salvaje VIP</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#f7f5fa;background:#0e1019}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px}
+main{width:min(100%,620px);height:min(90vh,780px);display:flex;flex-direction:column;background:#191b29;border:1px solid #393547;border-radius:20px;overflow:hidden;box-shadow:0 20px 70px #0007}
+header{padding:20px 24px;background:#242031;border-bottom:1px solid #393547}
+h1{font-size:1.3rem;margin:0 0 5px}header p{margin:0;color:#c6b9d4;font-size:.9rem}
+aside{padding:12px 20px;background:#312638;color:#f4d7e9;font-size:.83rem;line-height:1.4}
+#chat{flex:1;overflow:auto;padding:22px;display:flex;flex-direction:column;gap:14px}
+.bubble{padding:13px 16px;border-radius:16px;max-width:87%;line-height:1.5;white-space:pre-wrap}
+.bot{background:#302d40;align-self:flex-start}.me{background:#6b3158;align-self:flex-end}
+form{display:flex;gap:9px;padding:16px;background:#242031}
+input{flex:1;min-width:0;padding:14px;border:1px solid #55465c;border-radius:12px;background:#14141e;color:white;font:inherit}
+button{background:#d65a9c;color:#190b18;border:0;border-radius:12px;padding:0 20px;font:inherit;font-weight:700;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid white}
+small{display:block;text-align:center;color:#b6adbf;padding:0 12px 12px;background:#242031}
+</style></head><body>
+<main><header><h1>✦ NEXORA AI · Salvaje VIP</h1><p>Asistente de atención al cliente · Prototipo de pruebas</p></header>
+<aside>⚠️ DEMO SIN CONEXIÓN A SHOPIFY. No consulta stock, tallas ni precios reales. No recoge ni envía mensajes a ningún servidor.</aside>
+<section id="chat" aria-live="polite"></section>
+<form id="form"><input id="msg" aria-label="Escribe tu mensaje" placeholder="Pregunta por vestidos, tallas, envíos..." maxlength="600" required autocomplete="off"><button type="submit">Enviar</button></form>
+<small>Sin compras, reservas, publicaciones ni modificaciones en la tienda.</small>
+</main>
+<script>
+const chat=document.getElementById('chat'),input=document.getElementById('msg');
+function bubble(t,who){const e=document.createElement('div');e.className='bubble '+who;e.textContent=t;chat.append(e);chat.scrollTop=chat.scrollHeight}
+bubble('¡Hola! 💖 Bienvenida a Salvaje VIP. Soy el asistente virtual de la tienda. ¿Buscas algún tipo de prenda o necesitas ayuda?', 'bot');
+function reply(t){
+ const s=t.toLocaleLowerCase('es');
+ if(/hola|buenas|buenos días|buenas tardes/.test(s))return '¡Hola, guapa! 💖 ¿Qué tipo de ropa te apetece encontrar?';
+ if(/precio|cuánto|cuesta|rebaja|descuento|oferta/.test(s))return 'Te ayudo encantada 💕 Para darte un precio correcto necesito consultar el catálogo actualizado. Esta demo aún no está conectada a Shopify, así que no voy a inventarme ningún importe.';
+ if(/talla|stock|queda|disponib|existencia|tenéis|tenéis/.test(s))return '¡Vamos a comprobarlo! 💕 Dime qué prenda y talla buscas. Esta versión de pruebas no tiene acceso al inventario real, así que una persona de la tienda deberá confirmarte la disponibilidad.';
+ if(/envío|envio|entrega|devoluc|cambio|pago/.test(s))return '¡Claro! 💖 Para no darte condiciones incorrectas, prefiero que el equipo de Salvaje VIP confirme la política vigente de envíos, pagos y devoluciones.';
+ if(/vestido|blusa|abrigo|conjunto|ropa|falda|pantalón|pantalon/.test(s))return '¡Qué buena elección! ✨ ¿Lo buscas para diario o para una ocasión especial? Puedo ayudarte a concretar el estilo; la disponibilidad y el precio tendrán que verificarse en Shopify.';
+ if(/persona|humano|encargad|coral|hablar con/.test(s))return 'Por supuesto 💗 Podemos dejar la consulta preparada para el equipo de Salvaje VIP. Esta demo todavía no envía mensajes ni realiza el traspaso automáticamente.';
+ return '¡Cuéntame un poquito más! 💖 ¿Buscas una prenda, una talla o ayuda para elegir un look? Si necesitas información de stock o precios, habrá que confirmarla con el catálogo real.';
+}
+document.getElementById('form').addEventListener('submit',e=>{e.preventDefault();const t=input.value.trim();if(!t)return;bubble(t,'me');input.value='';bubble(reply(t),'bot');input.focus()});
+</script></body></html>
