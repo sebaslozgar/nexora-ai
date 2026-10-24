@@ -65,5 +65,22 @@ except sqlite3.IntegrityError:
     pass
 else:
     raise AssertionError("Se aceptó un rol de negocio inválido")
+# Casos positivos: empleados de su propio negocio, mensajes y alertas válidos.
+db.execute("UPDATE conversations SET assigned_user_id=? WHERE id=?", ("user-b", "conv-b"))
+db.execute("INSERT INTO alerts(id,business_id,conversation_id,kind) VALUES(?,?,?,?)", ("alert-ok", "biz-a", "conv-a", "lead"))
+db.execute("INSERT INTO appointments(id,business_id,contact_id,conversation_id,service_name,starts_at,ends_at) VALUES(?,?,?,?,?,?,?)", ("appt-ok", "biz-a", "contact-a", "conv-a", "revision", "2030-01-01T10:00", "2030-01-01T11:00"))
+db.execute("INSERT INTO calls(id,business_id,conversation_id) VALUES(?,?,?)", ("call-ok", "biz-b", "conv-b"))
+# Restricciones de estados y canales.
+for query, args in [
+    ("INSERT INTO conversations(id,business_id,contact_id,channel) VALUES(?,?,?,?)", ("invalid-channel", "biz-a", "contact-a", "telegram")),
+    ("UPDATE conversations SET status=? WHERE id=?", ("inventado", "conv-a")),
+    ("INSERT INTO messages(id,business_id,conversation_id,sender_type,body) VALUES(?,?,?,?,?)", ("invalid-sender", "biz-a", "conv-a", "unknown", "x")),
+]:
+    try:
+        db.execute(query, args)
+    except sqlite3.IntegrityError:
+        pass
+    else:
+        raise AssertionError("Se aceptó un valor inválido: " + query)
 assert db.execute("PRAGMA foreign_key_check").fetchall() == []
 print("OK: 10 tablas, aislamiento entre negocios, asignaciones y referencias verificadas.")
