@@ -117,4 +117,18 @@ assert handoff_to_human(db, owner_a, "conv-a")
 assert db.execute("SELECT status FROM conversations WHERE id='conv-a'").fetchone()[0] == "needs_human"
 db.execute("UPDATE conversations SET status='closed' WHERE id='conv-a'")
 assert not handoff_to_human(db, owner_a, "conv-a")
+# Una vez aceptado el traspaso, la IA no debe responder.
+from handoff import accept_handoff, ai_can_reply
+assert not ai_can_reply(db, "biz-a", "conv-a")
+assert not ai_can_reply(db, "biz-b", "conv-b")
+assert not accept_handoff(db, actor_b, "conv-a")
+assert accept_handoff(db, actor_b, "conv-b")
+assert db.execute("SELECT status FROM conversations WHERE id='conv-b'").fetchone()[0] == "human"
+assert not accept_handoff(db, actor_b, "conv-b")
+assert not ai_can_reply(db, "biz-b", "conv-b")
+assert not accept_handoff(db, owner_a, "conv-a")
+db.execute("UPDATE conversations SET status='ai' WHERE id='conv-b'")
+assert ai_can_reply(db, "biz-b", "conv-b")
+db.execute("UPDATE businesses SET ai_enabled=0 WHERE id='biz-b'")
+assert not ai_can_reply(db, "biz-b", "conv-b")
 print("OK: 10 tablas, aislamiento entre negocios, asignaciones y referencias verificadas.")
