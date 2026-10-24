@@ -83,4 +83,22 @@ for query, args in [
     else:
         raise AssertionError("Se aceptó un valor inválido: " + query)
 assert db.execute("PRAGMA foreign_key_check").fetchall() == []
+# Comprobaciones de permisos basadas en identidad verificada y membresía.
+from permissions import resolve_actor, allowed, list_visible_conversations
+
+actor_b = resolve_actor(db, auth_subject="auth-b", business_id="biz-b")
+assert actor_b is not None
+assert resolve_actor(db, auth_subject="auth-b", business_id="biz-a") is None
+assert not allowed(actor_b, "business.settings", resource_business_id="biz-b")
+assert allowed(actor_b, "conversations.read", resource_business_id="biz-b", assigned_user_id="user-b")
+assert not allowed(actor_b, "conversations.read", resource_business_id="biz-a", assigned_user_id="user-b")
+assert not allowed(actor_b, "conversations.read", resource_business_id="biz-b", assigned_user_id="user-a")
+assert [r[0] for r in list_visible_conversations(db, actor_b)] == ["conv-b"]
+db.execute("INSERT INTO users(id,auth_subject) VALUES(?,?)", ("owner-a", "auth-owner-a"))
+db.execute("INSERT INTO business_memberships(business_id,user_id,role) VALUES(?,?,?)", ("biz-a", "owner-a", "owner"))
+owner_a = resolve_actor(db, auth_subject="auth-owner-a", business_id="biz-a")
+assert allowed(owner_a, "business.settings", resource_business_id="biz-a")
+assert not allowed(owner_a, "business.settings", resource_business_id="biz-b")
+assert not allowed(owner_a, "undefined.action", resource_business_id="biz-a")
+assert [r[0] for r in list_visible_conversations(db, owner_a)] == ["conv-a"]
 print("OK: 10 tablas, aislamiento entre negocios, asignaciones y referencias verificadas.")
